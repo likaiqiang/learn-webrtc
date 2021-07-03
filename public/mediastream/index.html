@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cssgram/0.1.10/cssgram.min.css">
+    <title>照妖镜</title>
+    <style>
+        video{
+            width:100%;
+            object-fit: contain;
+        }
+        .previewC figure {
+            padding: 0;
+            margin:0
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <figure id="videofigure" class="aden">
+            <video autoplay id="video" autoplay playsinline></video>
+        </figure>
+        <div>
+            <button id="start">start</button>
+            <button id="stop">stop</button>
+            <button id="capture">capture</button>
+            <button id="download">download</button>
+            <label>filter:</label>
+            <select id="filterSelect">
+                
+            </select>
+        </div>
+        <div id="preview" class="previewC">
+            
+        </div>
+    </div>
+    <script src="./js/main.js"></script>
+</body>
+</html>

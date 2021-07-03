@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>peerConnection</title>
+</head>
+
+<body>
+    <div id="app">
+        <video id="local" autoplay></video>
+        <video id="remote" autoplay></video>
+        <div>
+            <button id="start">start</button>
+            <button id="call">call</button>
+            <button id="close">close</button>
+        </div>
+    </div>
+    <script>
+        const localVideo = document.getElementById('local')
+        const remoteVideo = document.getElementById('remote')
+        let localVideoConnect = null
+        let remoteVideoConnect = null
+
+        let localStream = null
+
+        const start = document.getElementById('start')
+        const call = document.getElementById('call')
+        const close = document.getElementById('close')
+
+        start.addEventListener('click', e => {
+            navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).then(streams => {
+                localStream = streams
+                localVideo.srcObject = streams
+            })
+        })
+        call.addEventListener('click', e => {
+            localVideoConnect = new RTCPeerConnection()
+            remoteVideoConnect = new RTCPeerConnection()
+            
+            localVideoConnect.onicecandidate = e => {
+                console.log(7)
+                remoteVideoConnect.addIceCandidate(e.candidate)
+            }
+
+            remoteVideoConnect.onicecandidate = e => {
+                console.log(8)
+                localVideoConnect.addIceCandidate(e.candidate)
+            }
+
+            remoteVideoConnect.ontrack = e => {
+                console.log(9)
+                if (e.streams && e.streams.length)
+                    remoteVideo.srcObject = e.streams[0]
+            }
+            localStream.getTracks().forEach(track => {
+                localVideoConnect.addTrack(track, localStream)
+            });
+            localVideoConnect.createOffer({
+                offerToReceiveVideo: 1,
+                offerToReceiveAudio: 0
+            }).then(desc => {
+                console.log(1)
+                localVideoConnect.setLocalDescription(desc)
+                console.log(2)
+                remoteVideoConnect.setRemoteDescription(desc)
+                console.log(3)
+                remoteVideoConnect.createAnswer().then(desc2 => {
+                    console.log(4)
+                    remoteVideoConnect.setLocalDescription(desc2)
+                    console.log(5)
+                    localVideoConnect.setRemoteDescription(desc2)
+                    console.log(6)
+                })
+            })
+        })
+        close.addEventListener('click', e => {
+            localVideoConnect.close()
+            remoteVideoConnect.close()
+            localVideoConnect = null
+            remoteVideoConnect = null
+        })
+    </script>
+</body>
+
+</html>

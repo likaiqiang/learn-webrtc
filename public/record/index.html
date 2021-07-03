@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <title>record</title>
+</head>
+<body>
+    <div id="app">
+        <div>
+            <video autoplay id="videoOutPut"></video>
+        </div>
+        <div>
+            <button id="start">start record</button>
+            <button disabled id="play">play</button>
+            <button disabled id="download">download</button>
+        </div>
+        <div>
+            <video id="videoPlay"></video>
+        </div>
+        <script>
+            const videoOutPut = document.getElementById('videoOutPut')
+            const videoPlay = document.getElementById('videoPlay')
+            const startBtn = document.getElementById('start')
+            const playBtn = document.getElementById('play')
+            const downBtn = document.getElementById('download')
+            let recoder = null
+            let recoderBuffer = []
+            let originStream = null
+            navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: true
+            }).then(stream=>{
+                originStream = stream
+                videoOutPut.srcObject = stream
+            })
+            const startRecord = ()=>{
+                const options = {
+                    mimeType: 'video/webm;codecs=h264'
+                }
+                if(MediaRecorder.isTypeSupported) {
+                    try{
+                        recoder = new MediaRecorder(originStream, options)
+                    } catch(e){
+                        console.error('Failed to Create MediaRecorder',e)
+                    }
+                    recoder.ondataavailable = (e)=>{
+                        if(e && e.data && e.data.size){
+                            recoderBuffer.push(e.data)
+                        }
+                    }
+                    recoder.start(10)
+                    startBtn.setAttribute('status','start')
+                    startBtn.textContent = 'stop record'
+                    playBtn.setAttribute('disabled',true)
+                    downBtn.setAttribute('disabled',true)
+
+                }
+            }
+            const stopRecord = ()=>{
+                recoder.stop()
+                startBtn.setAttribute('status','stop')
+                startBtn.textContent = 'start record'
+                playBtn.removeAttribute('disabled')
+                downBtn.removeAttribute('disabled')
+            }
+            startBtn.addEventListener('click',()=>{
+                if(startBtn.getAttribute('status') !== 'start') startRecord()
+                else stopRecord()
+            })
+            playBtn.addEventListener('click',e=>{
+                const blob = new Blob(recoderBuffer,{
+                    type:'video/webm'
+                })
+                videoPlay.setAttribute('src',URL.createObjectURL(blob))
+                videoPlay.play()
+            })
+            downBtn.addEventListener('click',e=>{
+                const blob = new Blob(recoderBuffer,{
+                    type:'video/webm'
+                })
+                const link = document.createElement('a')
+                link.href = URL.createObjectURL(blob)
+                link.download = 'aaa.webm'
+                link.click()
+            })
+        </script>
+    </div>
+</body>
+</html>

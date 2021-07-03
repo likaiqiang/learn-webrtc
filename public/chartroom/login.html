@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weui/2.4.4/style/weui.css"
+        integrity="sha512-7NfuUZnM73TO/o5NCDAHrxSzUw+hw2k4VRLR4gnYJnRRSRCl9NtAtcOYRk6nAiPZ4Ctru9YawrrQOB1g5lRBzg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://res.wx.qq.com/open/libs/weuijs/1.2.1/weui.min.js"></script>
+    <title>登录聊天室</title>
+    <style>
+        .join{
+            width: 70%;
+            margin: 0 auto;
+            margin-top: 40%;
+        }
+        .join_btn span{
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="join">
+        <div class="weui-cell weui-cell_active">
+            <input id="room_Id" value="111" required emptyTips="请输入房间号" class="weui-input" placeholder="请填写房间号">
+        </div>
+        <div class="weui-cell weui-cell_active">
+            <input id="nick" class="weui-input" value="likaiqiang" placeholder="请填写昵称">
+        </div>
+        <div class="weui-cell weui-cell_active join_btn" id="join_btn">
+            <a href="javascript:" class="weui-btn weui-btn_primary">
+                加入
+            </a>
+        </div>
+    </div>
+    <script>
+        !(function(){
+            var roomId = document.getElementById('room_Id')
+            var nick = document.getElementById('nick')
+            var joinBtn = document.getElementById('join_btn')
+
+            joinBtn.addEventListener('click',e=>{
+                weui.form.validate('#app',error=>{
+                    if(!error){
+                        // socket = io("https://likaiqianglearn.cn");
+                        // socket.emit('join', roomId.value, nick.value)
+                        // socket.on('joined',()=>{
+                        //     loading = false
+                            
+                        // })
+                        location.href = 'https://likaiqianglearn.cn/chartroom/content.html?room_id=' + roomId.value + '&nick=' + nick.value
+                    }
+                })
+            })
+        })()
+    </script>
+</body>
+
+</html>

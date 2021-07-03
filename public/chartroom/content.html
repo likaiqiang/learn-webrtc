@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weui/2.4.4/style/weui.css"
+        integrity="sha512-7NfuUZnM73TO/o5NCDAHrxSzUw+hw2k4VRLR4gnYJnRRSRCl9NtAtcOYRk6nAiPZ4Ctru9YawrrQOB1g5lRBzg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.1.4/adapter.min.js"
+        integrity="sha512-FZkQmTcqSzV2aNpWszYA/pPUISx6QjI60lKGwnIsfNFCGqUB7gcobQ9StH3hQCKFN92md3fCaXLzzSpoFat57A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.min.js"></script>
+    <script src="https://res.wx.qq.com/open/libs/weuijs/1.2.1/weui.min.js"></script>
+    <title>聊天室</title>
+    <style>
+        /*
+* Prefixed by https://autoprefixer.github.io
+* PostCSS: v7.0.29,
+* Autoprefixer: v9.7.6
+* Browsers: last 4 version
+*/
+
+        .app {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            -ms-flex-direction: column;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .app main {
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
+            overflow: auto;
+            padding-bottom: 72px;
+        }
+
+        .app header {
+            padding: 5px 10px;
+            text-align: center;
+            background-color: #000;
+            color: white;
+        }
+
+        .app .send_box {
+            position: fixed;
+            width: 100%;
+            left: 0;
+            bottom: 0;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            background-color: white;
+        }
+
+        .app .send_box input {
+            -webkit-box-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
+        }
+
+        .app .send_box button {
+            max-width: 100px;
+        }
+
+        .message_box {
+            padding: 5px 10px;
+        }
+
+        .message_box .message {
+            padding: 2px 5px;
+            margin-bottom: 5px;
+        }
+
+        .message_box .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .media_btn {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* .video-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            position: fixed;
+            background-color: #000;
+        }
+
+        .video-container .remote {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        } */
+        video{
+            display: none;
+            position: fixed;
+            width: 45%;
+            right: 0;
+            top: 20%;
+        }
+        /* .video-container .local {
+            
+        }
+
+        .video-container .close {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        } */
+    </style>
+</head>
+
+<body>
+    <div id="app" class="app">
+        <header id="header">
+
+        </header>
+        <main>
+            <div class="message_box" id="messageBox">
+            </div>
+            <div class="weui-cell send_box" id="sendBox">
+                <input required emptyTips="请输入聊天内容" class="weui-input" placeholder="请输入聊天内容">
+                <button class="weui-btn weui-btn_primary">发送</button>
+            </div>
+            <button class="weui-btn weui-btn_warn media_btn" id="media">视频</button>
+            <!-- <div class="video-container" id="videoContainer">
+                <video class="remote" autoplay id="remoteVideo"></video>
+                <video class="local" autoplay id="localVideo"></video>
+                <button class="weui-btn weui-btn_warn close">close</button>
+            </div> -->
+            <video id="video" controls autoplay></video>
+        </main>
+    </div>
+    <script src="./lib//rtc.js"></script>
+    <script>
+        !(function () {
+            const nick = new URL(location.href).searchParams.get('nick')
+            const room = new URL(location.href).searchParams.get('room_id')
+            const messageBox = document.getElementById('messageBox')
+            const header = document.getElementById('header')
+            const sendBox = document.getElementById('sendBox')
+            const mediaBtn = document.getElementById('media')
+            // const videoContainer = document.getElementById('videoContainer')
+            // const remoteVideo = document.getElementById('remoteVideo')
+            // const localVideo = document.getElementById('localVideo')
+
+            const video = document.getElementById('video')
+
+            let localRTC = null
+
+            let remoteSocketId = null
+            let socketId = null
+
+            if (!nick || !room) {
+                weui.loading('无效的room_id或者nick')
+            }
+
+            header.textContent = '房间: ' + room
+
+            const socket = io('https://likaiqianglearn.cn')
+            const initMesList = (list = []) => {
+                const frag = document.createDocumentFragment()
+                for (let message of list) {
+                    const mes = document.createElement('div')
+                    mes.classList.add('message')
+                    mes.textContent = message.data.username + ': ' + message.data.value
+                    frag.appendChild(mes)
+                }
+                messageBox.appendChild(frag)
+            }
+            socket.emit('join', room, nick)
+            socket.on('full', () => {
+                weui.loading('房间人数已满')
+            })
+            socket.on('joined', ({ room, id, count, username }) => {
+                socketId = id
+                fetch('https://likaiqianglearn.cn/api/getChartList?id=' + room).then(async res => {
+                    initMesList(await res.json())
+                })
+                socket.on('broadcast', e => {
+                    const message = document.createElement('div')
+                    message.textContent = e.username + ': ' + e.value
+                    message.classList.add('message')
+                    messageBox.appendChild(message)
+                })
+                sendBox.querySelector('button').addEventListener('click', e => {
+                    const value = sendBox.querySelector('input').value
+                    if (!value) return
+
+                    socket.emit('message', {
+                        username: nick,
+                        value
+                    })
+                    sendBox.querySelector('input').value = ''
+                })
+                sendBox.querySelector('input').addEventListener('keydown', e => {
+                    if (e.which === 13 || e.keyCode === 13) {
+                        const value = sendBox.querySelector('input').value
+                        socket.emit('message', {
+                            username: nick,
+                            value
+                        })
+                        sendBox.querySelector('input').value = ''
+                    }
+                })
+                mediaBtn.addEventListener('click', e => {
+                    navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    }).then(streams => {
+                        const sendRtc = new SenderRTC(socket, streams, id) //id 为远程的socket id
+
+                    })
+                })
+                let receiveRtc = new ReveiceRTC(socket, video, (_, e) => {
+                    console.log('e', e)
+                    video.style.display = 'block'
+                    mediaBtn.style.display = 'none'
+                    // navigator.mediaDevices.getUserMedia({
+                    //     video: true,
+                    //     audio: false
+                    // }).then(streams => {
+                    //     localVideo.srcObject = streams
+                    //     const s = io('https://likaiqianglearn.cn')
+                    //     let sendRtc = new SenderRTC(s, streams, receiveRtc.remoteSocketId)
+                    //     videoContainer.querySelector('.close').onclick = e=>{
+                    //         receiveRtc.close()
+                    //         sendRtc.close()
+                    //         videoContainer.style.display = 'none'
+                    //         receiveRtc = null
+                    //         sendRtc = null
+                    //         videoContainer.querySelector('.close').onclick = null
+                    //         streams.getTracks().forEach(track=>{
+                    //             track.stop()
+                    //         })
+                    //     }
+                    // })
+                })
+
+            })
+
+            window.onunload = () => {
+                socket.emit('leave', room, nick)
+            }
+        })()
+    </script>
+</body>
+
+</html>
