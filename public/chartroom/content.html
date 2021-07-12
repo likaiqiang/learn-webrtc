@@ -91,7 +91,7 @@
             transform: translateY(-50%);
         }
 
-        /* .video-container {
+        .video-container {
             display: none;
             width: 100%;
             height: 100%;
@@ -105,32 +105,19 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-        } */
-        video {
-            display: none;
-            position: fixed;
-            width: 45%;
-        }
-
-        .remote-video {
-            right: 0;
-            top: 20%;
-        }
-
-        .local-video {
-            left: 0;
-            top: 20%;
         }
         .close{
-            display:none;
             position: fixed;
             left: 50%;
             transform: translateX(-50%);
             bottom: 40px;
         }
 
-        /* .video-container .local {
-            
+        .video-container .local {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            max-width: 45%;
         }
 
         .video-container .close {
@@ -138,7 +125,7 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-        } */
+        }
     </style>
 </head>
 
@@ -156,8 +143,8 @@
             </div>
             <button class="weui-btn weui-btn_warn media_btn" id="media">视频</button>
             <div class="video-container" id="videoContainer">
-                <video class="remote" autoplay id="remoteVideo"></video>
-                <video class="local" autoplay id="localVideo"></video>
+                <video class="remote" autoplay controls id="remoteVideo"></video>
+                <video class="local" autoplay controls id="localVideo"></video>
                 <button class="weui-btn weui-btn_warn close" id="close">close</button>
             </div>
             <!-- <video id="remoteVideo" class="remote-video" controls autoplay></video>
@@ -174,7 +161,7 @@
             const header = document.getElementById('header')
             const sendBox = document.getElementById('sendBox')
             const mediaBtn = document.getElementById('media')
-            // const videoContainer = document.getElementById('videoContainer')
+            const videoContainer = document.getElementById('videoContainer')
             const remoteVideo = document.getElementById('remoteVideo')
             const localVideo = document.getElementById('localVideo')
 
@@ -188,16 +175,15 @@
                     localStream.getTracks().forEach(track=>{
                         track.stop()
                     })
-                    localVideo.style.display = 'none'
                     sendRtc = null
                 }
                 if(remoteStream){
                     remoteStream.getTracks().forEach(track=>{
                         track.stop()
                     })
-                    remoteVideo.style.display = 'none'
                     receiveRtc = null
                 }
+                videoContainer.style.display = 'none'
                 closeBtn.style.display = 'none'
             }
 
@@ -276,11 +262,11 @@
                     })
                 })
                 receiveRtc = new ReveiceRTC(socket, e => {
+                    console.log(e.streams)
                     remoteStream = e.streams[0]
-                    remoteVideo.style.display = 'block'
+                    videoContainer.style.display = 'block'
                     remoteVideo.play()
                     mediaBtn.style.display = 'none'
-                    closeBtn.style.display = 'block'
 
                     if (!isClickMediaBtn) {
                         navigator.mediaDevices.getUserMedia({
@@ -288,7 +274,6 @@
                             audio: false
                         }).then(streams => {
                             localStream = streams
-                            localVideo.style.display = 'block'
                             localVideo.srcObject = streams
                             new SenderRTC(socket, streams)
                         })
