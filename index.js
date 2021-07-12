@@ -99,6 +99,8 @@ io.on('connection', (socket) => {
 			}
 		}
 		else {
+			//前一个id应该leave
+			io.in(caches[index]).socketsLeave(room);
 			caches[index].id = socket.id
 		}
 		myCache.set('sockets', caches)
@@ -114,21 +116,26 @@ io.on('connection', (socket) => {
 				socket_id: socket.id,
 				data
 			})
-			io.in(room).emit('broadcast', data)
+			io.in(room).emit('broadcast', data) //给房间内所有人广播事件，包括自己
 		})
 		socket.on('local-candidate', (e) => {
-			socket.to(room).emit('local-candidate-from-server', e)
+			socket.to(room).emit('local-candidate-from-server', e) //给房间其他用户发offer，不包括自己
 		})
-		socket.on('remote-candidate', (e,id) => {
-			io.to(id).emit('remote-candidate-from-server', e)
+		socket.on('remote-candidate', (e) => {
+			// io.to(id).emit('remote-candidate-from-server', e)
+			socket.to(room).emit('remote-candidate-from-server',e)
 		})
-		socket.on('desc', (e,id) => {
+		socket.on('desc', (e) => {
 			if (e.type === 'offer') {
-				socket.to(room).emit('offer-from-server', e,id)
+				socket.to(room).emit('offer-from-server', e)
 			}
 			else {
-				io.to(id).emit('answer-from-server',e)
+				// io.to(id).emit('answer-from-server',e)
+				socket.to(room).emit('answer-from-server',e)
 			}
+		})
+		socket.on('close-video',e=>{
+			socket.to(room).emit('close-video-from-server',e)
 		})
 		socket.to(room).emit('other-joined', {
 			room,

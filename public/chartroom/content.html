@@ -106,13 +106,29 @@
             height: 100%;
             object-fit: contain;
         } */
-        video{
+        video {
             display: none;
             position: fixed;
             width: 45%;
+        }
+
+        .remote-video {
             right: 0;
             top: 20%;
         }
+
+        .local-video {
+            left: 0;
+            top: 20%;
+        }
+        .close{
+            display:none;
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 40px;
+        }
+
         /* .video-container .local {
             
         }
@@ -139,15 +155,17 @@
                 <button class="weui-btn weui-btn_primary">发送</button>
             </div>
             <button class="weui-btn weui-btn_warn media_btn" id="media">视频</button>
-            <!-- <div class="video-container" id="videoContainer">
+            <div class="video-container" id="videoContainer">
                 <video class="remote" autoplay id="remoteVideo"></video>
                 <video class="local" autoplay id="localVideo"></video>
-                <button class="weui-btn weui-btn_warn close">close</button>
-            </div> -->
-            <video id="video" controls autoplay></video>
+                <button class="weui-btn weui-btn_warn close" id="close">close</button>
+            </div>
+            <!-- <video id="remoteVideo" class="remote-video" controls autoplay></video>
+            <video id="localVideo" class="local-video" controls autoplay></video>
+            <button id="close" class="close weui-btn weui-btn_warn">close</button> -->
         </main>
     </div>
-    <script src="./lib//rtc.js"></script>
+    <script src="./lib/rtc.js"></script>
     <script>
         !(function () {
             const nick = new URL(location.href).searchParams.get('nick')
@@ -157,15 +175,37 @@
             const sendBox = document.getElementById('sendBox')
             const mediaBtn = document.getElementById('media')
             // const videoContainer = document.getElementById('videoContainer')
-            // const remoteVideo = document.getElementById('remoteVideo')
-            // const localVideo = document.getElementById('localVideo')
+            const remoteVideo = document.getElementById('remoteVideo')
+            const localVideo = document.getElementById('localVideo')
 
-            const video = document.getElementById('video')
+            let sendRtc = null,receiveRtc = null,localStream = null,remoteStream = null
 
-            let localRTC = null
+            let isClickMediaBtn = false
+            const closeBtn = document.getElementById('close')
 
-            let remoteSocketId = null
-            let socketId = null
+            const closeVideo = ()=>{
+                if(localStream){
+                    localStream.getTracks().forEach(track=>{
+                        track.stop()
+                    })
+                    localVideo.style.display = 'none'
+                    sendRtc = null
+                }
+                if(remoteStream){
+                    remoteStream.getTracks().forEach(track=>{
+                        track.stop()
+                    })
+                    remoteVideo.style.display = 'none'
+                    receiveRtc = null
+                }
+                closeBtn.style.display = 'none'
+            }
+
+            closeBtn.addEventListener('click',e=>{
+                closeVideo()
+                socket.emit('close-video')
+                mediaBtn.style.display = 'block'
+            })
 
             if (!nick || !room) {
                 weui.loading('无效的room_id或者nick')
@@ -188,8 +228,12 @@
             socket.on('full', () => {
                 weui.loading('房间人数已满')
             })
+            socket.on('close-video-from-server',e=>{
+                closeVideo()
+                mediaBtn.style.display = 'block'
+            })
             socket.on('joined', ({ room, id, count, username }) => {
-                socketId = id
+                // socketId = id 暂时不需要
                 fetch('https://likaiqianglearn.cn/api/getChartList?id=' + room).then(async res => {
                     initMesList(await res.json())
                 })
@@ -224,33 +268,31 @@
                         video: true,
                         audio: false
                     }).then(streams => {
-                        const sendRtc = new SenderRTC(socket, streams, id) //id 为远程的socket id
-
+                        localStream =  streams
+                        localVideo.style.display = 'block'
+                        localVideo.srcObject = streams
+                        isClickMediaBtn = true
+                        sendRtc = new SenderRTC(socket, streams)
                     })
                 })
-                let receiveRtc = new ReveiceRTC(socket, video, (_, e) => {
-                    console.log('e', e)
-                    video.style.display = 'block'
+                receiveRtc = new ReveiceRTC(socket, e => {
+                    remoteStream = e.streams[0]
+                    remoteVideo.style.display = 'block'
+                    remoteVideo.play()
                     mediaBtn.style.display = 'none'
-                    // navigator.mediaDevices.getUserMedia({
-                    //     video: true,
-                    //     audio: false
-                    // }).then(streams => {
-                    //     localVideo.srcObject = streams
-                    //     const s = io('https://likaiqianglearn.cn')
-                    //     let sendRtc = new SenderRTC(s, streams, receiveRtc.remoteSocketId)
-                    //     videoContainer.querySelector('.close').onclick = e=>{
-                    //         receiveRtc.close()
-                    //         sendRtc.close()
-                    //         videoContainer.style.display = 'none'
-                    //         receiveRtc = null
-                    //         sendRtc = null
-                    //         videoContainer.querySelector('.close').onclick = null
-                    //         streams.getTracks().forEach(track=>{
-                    //             track.stop()
-                    //         })
-                    //     }
-                    // })
+                    closeBtn.style.display = 'block'
+
+                    if (!isClickMediaBtn) {
+                        navigator.mediaDevices.getUserMedia({
+                            video: true,
+                            audio: false
+                        }).then(streams => {
+                            localStream = streams
+                            localVideo.style.display = 'block'
+                            localVideo.srcObject = streams
+                            new SenderRTC(socket, streams)
+                        })
+                    }
                 })
 
             })

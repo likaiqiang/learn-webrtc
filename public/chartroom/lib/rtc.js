@@ -1,5 +1,5 @@
 class ReveiceRTC {
-    constructor(socket, videoDom,playCb, options) {
+    constructor(socket,playCb, options) {
         this.pc = new RTCPeerConnection(options || {
             'iceServers': [
                 {
@@ -14,61 +14,30 @@ class ReveiceRTC {
                     'urls': 'stun:43.132.179.18:3478'
                 }
             ]
-            // 'iceServers':[
-            //     {
-            //         'urls':['turn:43.132.179.18:3478','stun:43.132.179.18:3478'],
-            //         'credential': "xxx",
-            //         'username': "xxx"
-            //     }
-            // ],
-            // 'iceServers': [
-            //     {
-            //         'urls': 'turn:43.132.179.18:3478?transport=udp',
-            //         'credential': "xxx",
-            //         'username': "xxx"
-            //     }, {
-            //         'urls': 'turn:43.132.179.18:3478?transport=tcp',
-            //         'credential': "xxx",
-            //         'username': "xxx"
-            //     }, {
-            //         'urls': 'stun:43.132.179.18:3478'
-            //     }
-            // ],
         })
-        this.videoDom = videoDom
-        this.remoteSocketId = null
         this.socket = socket
         this.socket.on('offer-from-server', (e, id) => {
-            this.remoteSocketId = id
             this.pc.setRemoteDescription(new RTCSessionDescription(e))
             this.pc.createAnswer().then(desc => {
-                this.pc.setLocalDescription(desc)
-                socket.emit('desc', desc, this.remoteSocketId)
+                try{
+                    this.pc.setLocalDescription(desc)
+                } catch(e){
+                    console.error(e)
+                }
+                socket.emit('desc', desc)
             })
         })
         this.socket.on('local-candidate-from-server', e => {
-            console.log('local-candidate-from-server', e)
             this.pc.addIceCandidate(new RTCIceCandidate({
                 sdpMLineIndex: e.label,
                 candidate: e.candidate
             }))
         })
         this.pc.ontrack = (e) => {
-            this.videoDom.srcObject = e.streams[0]
-            // video.style.display = 'block'
-            // mediaBtn.style.display = 'none'
-            this.videoDom.play()
+            console.log('ontrack')
             if (typeof playCb === 'function') {
-                playCb(this.videoDom, e)
+                playCb(e)
             }
-            // setInterval(() => {
-            //     localRTC.getReceivers()[0].getStats().then(reports => {
-            //         reports.forEach(report => {
-            //             if (report.type === 'inbound-rtp')
-            //                 console.log('receivve report', report.)
-            //         })
-            //     })
-            // }, 1000)
         }
         this.pc.onicecandidate = event => {
             if (event.candidate) {
@@ -76,7 +45,7 @@ class ReveiceRTC {
                     label: event.candidate.sdpMLineIndex,
                     id: event.candidate.sdpMid,
                     candidate: event.candidate.candidate
-                }, this.remoteSocketId)
+                })
             }
         }
     }
@@ -87,7 +56,7 @@ class ReveiceRTC {
 }
 
 class SenderRTC {
-    constructor(socket, streams, socketId, options) {
+    constructor(socket, streams, options) {
         this.pc = new RTCPeerConnection(options || {
             'iceServers': [
                 {
@@ -103,7 +72,6 @@ class SenderRTC {
                 }
             ]
         })
-        this.socketId = socketId
         this.socket = socket
         this.streams = streams
         this.pc.onicecandidate = event => {
@@ -129,22 +97,25 @@ class SenderRTC {
         })
         this.socket.on('answer-from-server', e => {
             console.log('answer-from-server')
-            this.pc.setRemoteDescription(new RTCSessionDescription(e))
+            console.log('setRemoteDescription',e)
+            try{
+                this.pc.setRemoteDescription(new RTCSessionDescription(e))
+            } catch(e){
+                console.error(e)
+            }
         })
 
         this.pc.createOffer({
             offerToReceiveAudio: 0,
             offerToReceiveVideo: 1
         }).then(desc => {
+            console.log('setLocalDescription',desc)
             this.pc.setLocalDescription(desc)
-            socket.emit('desc', desc, this.socketId)
+            socket.emit('desc', desc)
         })
     }
     close(){
         this.pc.close()
         this.pc = null
     }
-}
-class DuplexRtc{
-    
 }
