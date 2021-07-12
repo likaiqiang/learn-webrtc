@@ -13,8 +13,8 @@ myCache.set('sockets', [])
 const client = new MongoClient('mongodb://localhost:27017', {
 	useUnifiedTopology: true,
 	auth: {
-		user: 'likaiqiang',
-		password: 'butter530'
+		user: process.env.MongoDB_username,
+		password: process.env.MongoDB_pw
 	}
 });
 
