@@ -3,6 +3,9 @@ class ReveiceRTC {
         this.pc = new RTCPeerConnection(options || {
             'iceServers': [
                 {
+                    'urls': 'stun:43.132.179.18:3478'
+                },
+                {
                     'urls': 'turn:43.132.179.18:3478?transport=udp',
                     'credential': "butter530",
                     'username': "butter"
@@ -10,8 +13,6 @@ class ReveiceRTC {
                     'urls': 'turn:43.132.179.18:3478?transport=tcp',
                     'credential': "butter530",
                     'username': "butter"
-                }, {
-                    'urls': 'stun:43.132.179.18:3478'
                 }
             ]
         })
@@ -74,6 +75,9 @@ class SenderRTC {
         this.pc = new RTCPeerConnection(options || {
             'iceServers': [
                 {
+                    'urls': 'stun:43.132.179.18:3478'
+                },
+                {
                     'urls': 'turn:43.132.179.18:3478?transport=udp',
                     'credential': "butter530",
                     'username': "butter"
@@ -81,8 +85,6 @@ class SenderRTC {
                     'urls': 'turn:43.132.179.18:3478?transport=tcp',
                     'credential': "butter530",
                     'username': "butter"
-                }, {
-                    'urls': 'stun:43.132.179.18:3478'
                 }
             ]
         })
